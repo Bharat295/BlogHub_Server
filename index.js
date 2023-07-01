@@ -11,8 +11,8 @@ const app = express();
 const PORT = 8000;
 
 app.use(cors());
-// app.use(bodyParser.json({ extended: true }));
-// app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/', Router);
 app.listen(PORT, () => console.log(`Server is running on change ${PORT}`))
 

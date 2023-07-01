@@ -19,7 +19,6 @@
 // export default user;
 
 import mongoose from 'mongoose';
-
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -35,6 +34,9 @@ const userSchema = new mongoose.Schema({
         // required: true
     }
 });
-const user = mongoose.model('user', userSchema);
+const user = new mongoose.model('user', userSchema);
+
+
+
 
 export default user;
