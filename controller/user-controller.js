@@ -1,85 +1,58 @@
-// import User from "../model/user.js";
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-dotenv.config();
-const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    userName: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    Password: {
-        type: String,
-        required: true
-    }
-});
-const user = new mongoose.model('user', userSchema);
 import bcrypt from 'bcrypt';
-import { request, response } from 'express';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 
-const tokenSchema = new mongoose.Schema(
-    {
-        token: {
-            type: String,
-        required: true
-        }
-    }
-)
+import Token from '../model/token.js'
+import User from '../model/user.js';
 
-const Token = new mongoose.model('token', tokenSchema);
+dotenv.config();
 
-
-export const signupUser = async (request, respose) => {   
+export const singupUser = async (request, response) => {
     try {
-        
-        const hashedPassword = await bcrypt.hash(request.body.Password , 10);
-        const userFromFrontend = {name:request.body.name ,userName: request.body.userName , Password:hashedPassword};
-        const newUser = new user(userFromFrontend);
-        console.log(newUser);
+        // const salt = await bcrypt.genSalt();
+        // const hashedPassword = await bcrypt.hash(request.body.password, salt);
+        const hashedPassword = await bcrypt.hash(request.body.password, 10);
+
+        const user = { username: request.body.username, name: request.body.name, password: hashedPassword }
+
+        const newUser = new User(user);
         await newUser.save();
-        return respose.status(200).json({ msg: 'signup successfull' });
+
+        return response.status(200).json({ msg: 'Signup successfull' });
     } catch (error) {
-        console.log("error is happeing here")
-        console.log(error);
-        return respose.status(500).json({ msg: 'Error while signup the user' }); 
+        return response.status(500).json({ msg: 'Error while signing up user' });
     }
 }
 
+
 export const loginUser = async (request, response) => {
-    let userFromFrontend = await user.findOne({ userName: request.body.userName });
-    console.log(userFromFrontend);
-    console.log(request.body.userName);
-    if (!userFromFrontend) {
+    let user = await User.findOne({ username: request.body.username });
+    if (!user) {
         return response.status(400).json({ msg: 'Username does not match' });
     }
+
     try {
-        let match = await bcrypt.compare(request.body.Password, userFromFrontend.Password);
-        console.log(match);
+        let match = await bcrypt.compare(request.body.password, user.password);
         if (match) {
-            const accesToken = jwt.sign(
-                userFromFrontend.toJSON(), process.env.ACCESS_SECRET_KEY, { expiresIn: '15m' });
-            const refreshToken =
-                jwt.sign(userFromFrontend.toJSON(), process.env.REFRESH_SECRET_KEY); 
-            // console.log(accesToken);
-            // console.log(refreshToken);
-
-            const newToken = new Token({
-                token: refreshToken
-            });
+            const accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_SECRET_KEY, { expiresIn: '60m'});
+            const refreshToken = jwt.sign(user.toJSON(), process.env.REFRESH_SECRET_KEY);
+            
+            const newToken = new Token({ token: refreshToken });
             await newToken.save();
-
-            return response.status(200).json({ accesToken: accesToken, refreshToken: refreshToken ,name : userFromFrontend.name , userName : userFromFrontend.userName });
-       
+        
+            response.status(200).json({ accessToken: accessToken, refreshToken: refreshToken,name: user.name, username: user.username });
+        
         } else {
-             return response.status(400).json({ msg: 'Password does not match' });
+            response.status(400).json({ msg: 'Password does not match' })
         }
     } catch (error) {
-        return response.status(500).json({ msg: 'Error while login' });
+        response.status(500).json({ msg: 'error while login the user' })
     }
+}
 
+export const logoutUser = async (request, response) => {
+    const token = request.body.token;
+    await Token.deleteOne({ token: token });
+
+    response.status(204).json({ msg: 'logout successfull' });
 }
