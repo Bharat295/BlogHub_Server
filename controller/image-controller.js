@@ -3,11 +3,12 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();
 const BASE_URL = process.env.BASE_URL;
-const url = `${BASE_URL}`;
+const url = `https://bloghubbackend.onrender.com/`;
 
 let gfs, gridfsBucket;
 const conn = mongoose.connection;
 
+// console.log(url);
 conn.once('open', () => {
     gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
         bucketName: 'fs'
@@ -21,7 +22,7 @@ export const uploadImage = (request, response) => {
         return response.status(404).json("File not found");
     
     const imageUrl = `${url}/file/${request.file.filename}`;
- 
+    console.log(imageUrl);
     return response.status(200).json(imageUrl);    
 }
  
